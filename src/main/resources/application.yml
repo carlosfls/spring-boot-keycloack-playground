@@ -12,3 +12,5 @@ spring:
         jwt:
           issuer-uri: http://localhost:8080/realms/spring-boot-dev
           jwk-set-uri: http://localhost:8080/realms/spring-boot-dev/protocol/openid-connect/certs
+
+client-id: keycloack-playground-api

@@ -1,5 +1,6 @@
 package org.carlosacademic.keycloackplayground.jwt;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -18,6 +19,9 @@ import java.util.Map;
  */
 @Component
 public class JwtTokenConverter implements Converter<Jwt, AbstractAuthenticationToken> {
+
+    @Value("${client-id}")
+    private String clientId;
 
     private final JwtGrantedAuthoritiesConverter converter = new JwtGrantedAuthoritiesConverter();
 
@@ -57,7 +61,7 @@ public class JwtTokenConverter implements Converter<Jwt, AbstractAuthenticationT
      * Create a user JWT authentication token.
      * Get the resource access from the JWT and inside them get the roles.
      * Convert the roles to spring security roles.
-     * In this case we not use the scopes only the roles from the resource access.
+     * In this case we don't use the scopes only the roles from the resource access.
      *
      * @param jwt The JWT to convert.
      * @return The AuthenticationToken for the user api.
@@ -66,7 +70,7 @@ public class JwtTokenConverter implements Converter<Jwt, AbstractAuthenticationT
         String username = getUsernameClaim(jwt);
         Map<String, Object> resourceAccess = jwt.getClaimAsMap("resource_access");
         if (resourceAccess != null) {
-            Map<String, Object> resource = (Map<String, Object>) resourceAccess.get("keycloack-playground-api");
+            Map<String, Object> resource = (Map<String, Object>) resourceAccess.get(clientId);
             if (resource != null) {
                 List<String> roles = (List<String>) resource.get("roles");
                 List<SimpleGrantedAuthority> authorities = roles.stream()

@@ -27,7 +27,7 @@ public class SecurityConfig {
                         req.requestMatchers("/health").permitAll())
                 .authorizeHttpRequests(req -> {
                     req.requestMatchers("/hello/admin").hasAnyRole("hello_admin","admin-client-role");
-                    req.requestMatchers("/hello/user").hasAnyRole("hello_user", "hello_admin","user-client-role");
+                    req.requestMatchers("/hello/user").hasAnyRole("hello_user", "hello_admin","user-client-role","admin-client-role");
                 })
                 .authorizeHttpRequests(req ->
                         req.anyRequest().authenticated())
