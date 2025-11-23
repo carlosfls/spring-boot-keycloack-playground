@@ -1,0 +1,36 @@
+{
+  "exp": 1763913301,
+  "iat": 1763913001,
+  "jti": "trrtcc:ca0cfd15-96e9-75b3-ffce-bdf4e120d4e6",
+  "iss": "http://localhost:8080/realms/spring-boot-dev",
+  "aud": "account",
+  "sub": "e47eba4b-7c5a-4b51-8d14-951879fdf1ec",
+  "typ": "Bearer",
+  "azp": "keycloack-playground-api",
+  "acr": "1",
+  "allowed-origins": [
+    "*"
+  ],
+  "realm_access": {
+    "roles": [
+      "offline_access",
+      "uma_authorization",
+      "default-roles-spring-boot-dev"
+    ]
+  },
+  "resource_access": {
+    "account": {
+      "roles": [
+        "manage-account",
+        "manage-account-links",
+        "view-profile"
+      ]
+    }
+  },
+  "scope": "hello_admin profile hello_user email",
+  "email_verified": false,
+  "clientHost": "172.17.0.1",
+  "preferred_username": "service-account-keycloack-playground-api",
+  "clientAddress": "172.17.0.1",
+  "client_id": "keycloack-playground-api"
+}

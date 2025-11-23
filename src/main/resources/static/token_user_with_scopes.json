@@ -1,13 +1,13 @@
 {
-  "exp": 1763851025,
-  "iat": 1763850725,
-  "jti": "onrtro:0d8739a4-2572-fdbf-7f84-c2a992484716",
+  "exp": 1763913590,
+  "iat": 1763913290,
+  "jti": "onrtro:1cd9ebc9-0f22-ba54-491d-e6925ccc20a5",
   "iss": "http://localhost:8080/realms/spring-boot-dev",
   "aud": "account",
   "sub": "3466961b-5eb9-43aa-a462-73dcc5780a8f",
   "typ": "Bearer",
   "azp": "keycloack-playground-api",
-  "sid": "55c9ee52-2dc3-a002-69a0-799c38930b6a",
+  "sid": "cf4881ba-e383-db81-8f4f-a67dada40584",
   "acr": "1",
   "allowed-origins": [
     "*"
@@ -34,7 +34,7 @@
       ]
     }
   },
-  "scope": "profile email",
+  "scope": "hello_admin profile hello_user email",
   "email_verified": true,
   "name": "Carlos Felix Sosa",
   "preferred_username": "carlos.sosa",

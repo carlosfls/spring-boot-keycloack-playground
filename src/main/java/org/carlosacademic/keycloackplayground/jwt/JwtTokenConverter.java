@@ -1,79 +1,105 @@
 package org.carlosacademic.keycloackplayground.jwt;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
- * Class to convert a JWT to an AuthenticationToken with the proper claims for spring security.
+ * Class to convert a JWT to an AuthenticationToken with the proper roles for spring security.
  */
 @Component
 public class JwtTokenConverter implements Converter<Jwt, AbstractAuthenticationToken> {
 
-    @Value("${resource-id}")
-    private String resourceId;
+    private final JwtGrantedAuthoritiesConverter converter = new JwtGrantedAuthoritiesConverter();
 
+    /**
+     * Convert a JWT to an AuthenticationToken with the proper roles for spring security.
+     * If the token is a client token (has the client_id claim), it executes the client flow.
+     * Otherwise, executes the user flow.
+     *
+     * @param jwt The JWT to convert.
+     * @return The AuthenticationToken.
+     */
     @Override
     public AbstractAuthenticationToken convert(Jwt jwt) {
-        List<String> roles = extractRolesFromJwt(jwt);
-        List<SimpleGrantedAuthority> authorities = convertRolesToGrantedAuthorities(roles);
-        String username = extractUsernameFromJwt(jwt);
+        if (jwt.hasClaim("client_id")) {
+            return createClientJwtAuthenticationToken(jwt);
+        }
 
-
-        return new JwtAuthenticationToken(jwt, authorities, username);
+        return createUserJwtAuthenticationToken(jwt);
     }
 
     /**
-     * Extracts the roles from the JWT.
-     * Accessing to the JSON in the jwt searching for the resource_access key and the resourceId.
-     * Then access to the list of roles.
-     * Example of the token: example.json in the resources' folder.
+     * Create a client JWT authentication token.
+     * Get the scopes from the JWT and convert them to roles for spring security to recognize.
      *
-     * @param jwt the token
-     * @return the roles
+     * @param jwt The JWT to convert.
+     * @return The AuthenticationToken for the client api.
      */
-    private List<String> extractRolesFromJwt(Jwt jwt) {
-        return Optional.ofNullable(jwt.getClaims().get("resource_access"))
-                .map(access -> (Map<String, Object>) access)
-                .map(accessMap -> (Map<String, Object>) accessMap.get(resourceId))
-                .map(resourceMap -> (List<String>) resourceMap.get("roles"))
-                .orElse(Collections.emptyList());
+    private JwtAuthenticationToken createClientJwtAuthenticationToken(Jwt jwt) {
+        Collection<GrantedAuthority> grantedAuthorities = converter.convert(jwt);
+        List<SimpleGrantedAuthority> authorities = transformScopesToRoles(grantedAuthorities);
+        String clientId = getClientIdClaim(jwt);
+
+        return new JwtAuthenticationToken(jwt, authorities, clientId);
     }
 
     /**
-     * Converts the roles to a list of granted authorities.
-     * Add the prefix ROLE_ to the role for spring security to recognize it.
+     * Create a user JWT authentication token.
+     * Get the resource access from the JWT and inside them get the roles.
+     * Convert the roles to spring security roles.
+     * In this case we not use the scopes only the roles from the resource access.
      *
-     * @param roles The jwt extracted roles
-     * @return The granted authorities
+     * @param jwt The JWT to convert.
+     * @return The AuthenticationToken for the user api.
      */
-    private List<SimpleGrantedAuthority> convertRolesToGrantedAuthorities(List<String> roles) {
-        return roles.stream()
-                .map(role -> "ROLE_"+role)
+    private JwtAuthenticationToken createUserJwtAuthenticationToken(Jwt jwt) {
+        String username = getUsernameClaim(jwt);
+        Map<String, Object> resourceAccess = jwt.getClaimAsMap("resource_access");
+        if (resourceAccess != null) {
+            Map<String, Object> resource = (Map<String, Object>) resourceAccess.get("keycloack-playground-api");
+            if (resource != null) {
+                List<String> roles = (List<String>) resource.get("roles");
+                List<SimpleGrantedAuthority> authorities = roles.stream()
+                        .map(role -> "ROLE_" + role)
+                        .map(SimpleGrantedAuthority::new)
+                        .toList();
+
+                return new JwtAuthenticationToken(jwt, authorities, username);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Transform the granted authorities with the prefix SCOPES to roles for spring security to recognize.
+     *
+     * @param grantedAuthorities The granted authorities from the JWT.
+     * @return The list of roles.
+     */
+    private List<SimpleGrantedAuthority> transformScopesToRoles(Collection<GrantedAuthority> grantedAuthorities) {
+        return grantedAuthorities
+                .stream()
+                .filter(a -> a.getAuthority().startsWith("SCOPE_"))
+                .map(a -> a.getAuthority().replaceAll("SCOPE_","ROLE_"))
                 .map(SimpleGrantedAuthority::new)
                 .toList();
     }
 
-    /**
-     * Extracts the username from the JWT.
-     * If the preferred_username claim is present, it will be used, otherwise the subject claim will be used.
-     *
-     * @param jwt The JWT
-     * @return The username.
-     */
-    private String extractUsernameFromJwt(Jwt jwt) {
-        if (jwt.getClaims().containsKey("preferred_username")) {
-            return jwt.getClaims().get("preferred_username").toString();
-        }
-        return jwt.getSubject();
+    private String getClientIdClaim(Jwt token) {
+        return token.getClaimAsString("client_id");
+    }
+
+    private String getUsernameClaim(Jwt token) {
+        return token.getClaimAsString("preferred_username");
     }
 }
