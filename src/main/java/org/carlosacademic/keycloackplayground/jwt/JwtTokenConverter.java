@@ -1,11 +1,11 @@
 package org.carlosacademic.keycloackplayground.jwt;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -19,16 +19,17 @@ import java.util.Optional;
 @Component
 public class JwtTokenConverter implements Converter<Jwt, AbstractAuthenticationToken> {
 
-    private static final String resourceId = "keycloack-playground-api";
-    private final JwtGrantedAuthoritiesConverter converter = new JwtGrantedAuthoritiesConverter();
+    @Value("${resource-id}")
+    private String resourceId;
 
     @Override
     public AbstractAuthenticationToken convert(Jwt jwt) {
         List<String> roles = extractRolesFromJwt(jwt);
         List<SimpleGrantedAuthority> authorities = convertRolesToGrantedAuthorities(roles);
+        String username = extractUsernameFromJwt(jwt);
 
 
-        return new JwtAuthenticationToken(jwt, authorities);
+        return new JwtAuthenticationToken(jwt, authorities, username);
     }
 
     /**
@@ -60,5 +61,19 @@ public class JwtTokenConverter implements Converter<Jwt, AbstractAuthenticationT
                 .map(role -> "ROLE_"+role)
                 .map(SimpleGrantedAuthority::new)
                 .toList();
+    }
+
+    /**
+     * Extracts the username from the JWT.
+     * If the preferred_username claim is present, it will be used, otherwise the subject claim will be used.
+     *
+     * @param jwt The JWT
+     * @return The username.
+     */
+    private String extractUsernameFromJwt(Jwt jwt) {
+        if (jwt.getClaims().containsKey("preferred_username")) {
+            return jwt.getClaims().get("preferred_username").toString();
+        }
+        return jwt.getSubject();
     }
 }
