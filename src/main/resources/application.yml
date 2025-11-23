@@ -1,0 +1,14 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: keycloackPlayground
+
+#keycloak:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/spring-boot-dev
+          jwk-set-uri: http://localhost:8080/realms/spring-boot-dev/protocol/openid-connect/certs
